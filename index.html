@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium Cube Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #0b0f13;
+    color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  #timerArea {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: radial-gradient(circle at center, #111 0%, #0b0f13 100%);
+  }
+  #display {
+    font-size: 18vw;
+    font-weight: 800;
+    user-select: none;
+  }
+  #stats {
+    display: flex;
+    justify-content: space-around;
+    padding: 16px;
+    background: #10161d;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .stat {
+    text-align: center;
+  }
+  .label {
+    font-size: 14px;
+    color: #aaa;
+    text-transform: uppercase;
+  }
+  .value {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  #controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    background: #0b0f13;
+  }
+  .btn {
+    appearance: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #f0f0f0;
+    background: linear-gradient(145deg, #121820, #0a0f14);
+    box-shadow: 6px 6px 12px rgba(0,0,0,0.6), -6px -6px 12px rgba(255,255,255,0.05);
+    transition: transform 0.1s ease;
+  }
+  .btn:active {
+    transform: scale(0.96);
+    box-shadow: inset 4px 4px 8px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
+  }
+</style>
+</head>
+<body>
+  <div id="timerArea">
+    <div id="display">0.000</div>
+  </div>
+  <div id="controls">
+    <button id="toggleInspection" class="btn">Inspection</button>
+    <button id="reset" class="btn">Reset</button>
+  </div>
+  <div id="stats">
+    <div class="stat">
+      <div class="label">Best</div>
+      <div id="best" class="value">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Average</div>
+      <div id="avg" class="value">—</div>
+    </div>
+  </div>
+
+<script>
+  const display = document.getElementById("display");
+  const bestEl = document.getElementById("best");
+  const avgEl = document.getElementById("avg");
+  const timerArea = document.getElementById("timerArea");
+  const toggleInspection = document.getElementById("toggleInspection");
+  const resetBtn = document.getElementById("reset");
+
+  let running = false;
+  let startTime = 0;
+  let rafId = null;
+  let solves = [];
+  let inspection = false;
+  let inspectionLeft = 0;
+  let inspectionRaf = null;
+
+  function fmt(ms){ return (ms/1000).toFixed(3); }
+  function vibrate(p){ if(navigator.vibrate) navigator.vibrate(p); }
+
+  function updateStats(){
+    if(solves.length===0){ bestEl.textContent="—"; avgEl.textContent="—"; return; }
+    const best = Math.min(...solves);
+    const avg = solves.reduce((a,b)=>a+b,0)/solves.length;
+    bestEl.textContent = fmt(best);
+    avgEl.textContent = fmt(avg);
+  }
+
+  function startTimer(){
+    running = true;
+    startTime = performance.now();
+    vibrate(10);
+    const tick = ()=>{
+      if(!running) return;
+      display.textContent = fmt(performance.now()-startTime);
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function stopTimer(){
+    running = false;
+    cancelAnimationFrame(rafId);
+    const ms = performance.now()-startTime;
+    display.textContent = fmt(ms);
+    solves.push(ms);
+    vibrate([0,20]);
+    updateStats();
+  }
+
+  function startInspection(){
+    inspectionLeft = 15000;
+    const tick = ()=>{
+      if(!inspection) return;
+      inspectionLeft -= 100;
+      display.textContent = (inspectionLeft/1000).toFixed(1);
+      if(inspectionLeft<=0){
+        display.textContent = "0.0";
+        vibrate([0,50]);
+        inspection=false;
+      } else {
+        inspectionRaf = setTimeout(tick,100);
+      }
+    };
+    tick();
+  }
+
+  timerArea.addEventListener("click", ()=>{
+    if(!running){
+      if(inspection){
+        inspection=false;
+        clearTimeout(inspectionRaf);
+        startTimer();
+      } else {
+        startTimer();
+      }
+    } else {
+      stopTimer();
+    }
+  });
+
+  toggleInspection.addEventListener("click", ()=>{
+    if(running) return;
+    inspection=!inspection;
+    if(inspection){ startInspection(); }
+    else { display.textContent="0.000"; }
+  });
+
+  resetBtn.addEventListener("click", ()=>{
+    solves=[];
+    updateStats();
+    display.textContent="0.000";
+  });
+</script>
+</body>
+</html>
