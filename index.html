@@ -13,7 +13,7 @@
     color: #f0f0f0;
     display: flex;
     flex-direction: column;
-    height: 92vh;
+    height: 100vh;
   }
   #timerArea {
     flex: 1;
@@ -180,9 +180,8 @@
     else { display.textContent="0.000"; }
   });
 
+  // ✅ Fixed Reset: only clears display, not stats
   resetBtn.addEventListener("click", ()=>{
-    solves=[];
-    updateStats();
     display.textContent="0.000";
   });
 </script>
